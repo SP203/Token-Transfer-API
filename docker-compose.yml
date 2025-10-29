@@ -1,0 +1,16 @@
+version: "3.9"
+services:
+  db:
+    image: postgres:16
+    container_name: btp_db
+    environment:
+      POSTGRES_USER: btp
+      POSTGRES_PASSWORD: btp
+      POSTGRES_DB: btp
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U btp -d btp"]
+      interval: 2s
+      timeout: 3s
+      retries: 20

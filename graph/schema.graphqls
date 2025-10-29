@@ -1,0 +1,3 @@
+type Mutation {
+  transfer(from_address: ID!, to_address: ID!, amount: Int!): Int!
+}
