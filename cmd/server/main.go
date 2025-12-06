@@ -17,7 +17,6 @@ import (
 func main() {
 	dsn := os.Getenv("BTP_DB_DSN")
 	if dsn == "" {
-		// domyslne polaczenie do naszej bazy z Dockera
 		dsn = "postgres://btp:btp@localhost:5432/btp"
 	}
 

@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib" // driver for Postgres
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 type Config struct {
@@ -27,6 +27,6 @@ func MustPing(ctx context.Context, db *sql.DB) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	if err := db.PingContext(ctx); err != nil {
-		panic("❌ database connection failed: " + err.Error())
+		panic("database connection failed: " + err.Error())
 	}
 }

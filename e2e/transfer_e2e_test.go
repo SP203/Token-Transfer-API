@@ -3,6 +3,7 @@ package e2e
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -80,7 +81,6 @@ func TestTransferRaceScenario(t *testing.T) {
 	defer db.Close()
 
 	resetWallet(t, db, "0xX", 10)
-
 	resetWallet(t, db, "0xD", 5)
 	resetWallet(t, db, "0xY", 0)
 	resetWallet(t, db, "0xZ", 0)
@@ -98,20 +98,25 @@ func TestTransferRaceScenario(t *testing.T) {
 		<-release
 	}
 
+	errs := make(chan error, 3)
+
 	var wg sync.WaitGroup
 	wg.Add(3)
 
 	go func() {
 		defer wg.Done()
-		_, _ = repo.Transfer(context.Background(), "0xX", "0xY", 4)
+		_, err := repo.Transfer(context.Background(), "0xX", "0xY", 4)
+		errs <- err
 	}()
 	go func() {
 		defer wg.Done()
-		_, _ = repo.Transfer(context.Background(), "0xX", "0xZ", 7)
+		_, err := repo.Transfer(context.Background(), "0xX", "0xZ", 7)
+		errs <- err
 	}()
 	go func() {
 		defer wg.Done()
-		_, _ = repo.Transfer(context.Background(), "0xD", "0xX", 1)
+		_, err := repo.Transfer(context.Background(), "0xD", "0xX", 1)
+		errs <- err
 	}()
 
 	select {
@@ -122,6 +127,16 @@ func TestTransferRaceScenario(t *testing.T) {
 
 	close(release)
 	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		if err == nil {
+			continue
+		}
+		if !errors.Is(err, appdb.ErrInsufficient) {
+			t.Fatalf("unexpected error returned: %v", err)
+		}
+	}
 
 	var final int64
 	if err := db.QueryRow(`SELECT balance FROM wallets WHERE address=$1`, "0xX").Scan(&final); err != nil {
